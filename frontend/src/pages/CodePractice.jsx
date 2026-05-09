@@ -91,16 +91,10 @@ export default function CodePractice() {
   // Load curated problem list
   const loadCuratedProblems = useCallback(async () => {
     setLoadingProblems(true);
+    setError('');
     try {
-      const params = new URLSearchParams();
-      if (difficulty && difficulty !== 'All') {
-        params.append('difficulty', difficulty);
-      }
-      if (topic && topic !== 'All') {
-        params.append('topic', topic);
-      }
-
-      const response = await axios.get(`http://localhost:5000/api/practice/problems?${params.toString()}`);
+      // Load all problems without filtering by current state
+      const response = await axios.get(`http://localhost:5000/api/practice/problems`);
       setCuratedProblems(response.data?.problems || []);
       setProblemStats(response.data?.stats);
     } catch (err) {
@@ -109,13 +103,14 @@ export default function CodePractice() {
     } finally {
       setLoadingProblems(false);
     }
-  }, [difficulty, topic]);
+  }, []);
 
   // Load a specific curated problem
   const loadCuratedProblem = useCallback(async (curatedProblemId) => {
     setIsGenerating(true);
     setError('');
     setSubmission(null);
+    setCode(''); // Clear code editor - user writes from scratch
     try {
       const response = await axios.get(`http://localhost:5000/api/practice/problem/${curatedProblemId}`);
       const nextProblem = response.data?.problem;
@@ -123,7 +118,6 @@ export default function CodePractice() {
       if (nextProblem) {
         setProblem(nextProblem);
         setProblemId(nextProblem.id);
-        setCode(nextProblem.starterCode || '');
         setProblemSource('curated');
       }
     } catch (err) {
@@ -145,6 +139,7 @@ export default function CodePractice() {
     setIsGenerating(true);
     setError('');
     setSubmission(null);
+    setCode(''); // Clear code editor when loading new problem
     try {
       const response = await axios.post('http://localhost:5000/api/practice/problem', {
         sessionId,
@@ -159,7 +154,7 @@ export default function CodePractice() {
       if (nextProblem) {
         setProblem(nextProblem);
         setProblemId(nextProblemId);
-        setCode(nextProblem.starterCode || '');
+        // Don't auto-fill code - user writes from scratch
         setProblemSource('ai');
       }
     } catch (err) {
@@ -167,7 +162,7 @@ export default function CodePractice() {
       setError('Unable to fetch a fresh problem right now. Showing a fallback prompt.');
       setProblem(DEFAULT_PROBLEM);
       setProblemId(null);
-      setCode(DEFAULT_PROBLEM.starterCode || '');
+      // Don't auto-fill code
     } finally {
       setIsGenerating(false);
     }
@@ -230,23 +225,23 @@ export default function CodePractice() {
       <div className="pointer-events-none absolute bottom-[-30%] left-[-5%] h-96 w-96 rounded-full bg-amber-400/10 blur-3xl animate-float-slow" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.12),transparent_55%)]" />
 
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
           <div className="flex items-start gap-4">
             <button
               onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-200 hover:text-white transition"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition"
             >
               <ArrowLeft size={16} />
               Back to Dashboard
             </button>
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI Practice Lab</p>
-              <h1 className="text-2xl font-semibold text-slate-100">Coding Practice Arena</h1>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Practice Workspace</p>
+              <h1 className="text-xl font-semibold text-slate-100">Code Practice</h1>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 p-2">
             {/* Problem Source Toggle */}
             <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 p-1">
               <button
@@ -276,7 +271,7 @@ export default function CodePractice() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 px-4 py-2 text-xs text-slate-300">
+            <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 px-3 py-2 text-xs text-slate-300">
               {isGenerating || loadingProblems ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
@@ -340,45 +335,69 @@ export default function CodePractice() {
           </div>
         </div>
 
-        {/* Curated Problems List Modal */}
-        {problemSource === 'curated' && (
-          <div className="border-t border-slate-800/80 bg-slate-900/40 max-w-7xl mx-auto px-6 py-4">
-            {loadingProblems ? (
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
-                <Loader2 size={16} className="animate-spin" />
-                Loading problems...
+      </header>
+
+      <main className="relative z-10 flex-1 min-h-0 px-6 py-5">
+        <div
+          className={`max-w-7xl mx-auto grid grid-cols-1 gap-6 min-h-0 ${
+            problemSource === 'curated'
+              ? 'xl:grid-cols-[300px_1.35fr_1.05fr]'
+              : 'xl:grid-cols-[1.3fr_1fr]'
+          }`}
+        >
+          {problemSource === 'curated' && (
+            <aside className="min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/70 overflow-hidden flex flex-col animate-fade-in-up">
+              <div className="px-4 py-4 border-b border-slate-800/70 bg-slate-950/90">
+                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Top 100</p>
+                <h2 className="mt-1 text-sm font-semibold text-slate-100">Problem List</h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  {problemStats ? `${problemStats.filtered} loaded` : 'Curated interview problems'}
+                </p>
               </div>
-            ) : curatedProblems.length > 0 ? (
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-3">Select a Problem</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
-                  {curatedProblems.map((p) => (
+
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {loadingProblems ? (
+                  <div className="flex items-center gap-2 text-slate-400 text-sm px-2 py-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Loading problems...
+                  </div>
+                ) : curatedProblems.length > 0 ? (
+                  curatedProblems.map((p) => (
                     <button
                       key={p.id}
                       onClick={() => loadCuratedProblem(p.id)}
-                      className={`text-left rounded-lg px-3 py-2 text-xs transition border ${
+                      className={`w-full text-left rounded-xl px-3 py-3 border transition ${
                         problemId === p.id
-                          ? 'bg-teal-500/20 border-teal-500/50 text-teal-200'
-                          : 'bg-slate-800/40 border-slate-700/50 text-slate-300 hover:bg-slate-800/60'
+                          ? 'bg-teal-500/15 border-teal-500/50 text-teal-100'
+                          : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-900 hover:border-slate-700'
                       }`}
                     >
-                      <div className="font-semibold">{p.title}</div>
-                      <div className="text-slate-400 text-xs">
-                        {p.difficulty} • {p.topic}
+                      <div className="line-clamp-1 text-sm font-semibold">{p.title}</div>
+                      <div className="mt-2 flex items-center gap-2 text-[11px]">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 ${
+                            p.difficulty === 'Easy'
+                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                              : p.difficulty === 'Medium'
+                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                              : 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+                          }`}
+                        >
+                          {p.difficulty}
+                        </span>
+                        <span className="rounded-full border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-slate-300">
+                          {p.topic}
+                        </span>
                       </div>
                     </button>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 px-2 py-2">No problems found.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-xs text-slate-400">No problems found. Try adjusting filters.</p>
-            )}
-          </div>
-        )}
-      </header>
+            </aside>
+          )}
 
-      <main className="relative z-10 flex-1 min-h-0 px-6 py-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-6 min-h-0">
           <section className="min-h-0 flex flex-col gap-6 animate-fade-in-up">
             {error && (
               <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200 flex items-center gap-2">
@@ -387,31 +406,36 @@ export default function CodePractice() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-6 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.8)]">
+            <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/60 to-slate-950/80 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.8)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI Prompt</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-100">
+                <div className="flex-1">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">Problem Statement</p>
+                  <h2 className="mt-2 text-2xl font-bold text-slate-50">
                     {problem?.title || 'Generating problem...'}
                   </h2>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1">
-                      <Tag size={12} />
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/40 bg-teal-500/15 px-3 py-1.5 text-teal-200 font-medium">
+                      <Tag size={13} />
                       {problem?.topic || topic}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1">
-                      <Code size={12} />
+                    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-medium ${
+                      problem?.difficulty === 'Easy'
+                        ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200'
+                        : problem?.difficulty === 'Medium'
+                        ? 'border-amber-500/40 bg-amber-500/15 text-amber-200'
+                        : 'border-rose-500/40 bg-rose-500/15 text-rose-200'
+                    }`}>
                       {problem?.difficulty || difficulty}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">
-                      <Clock size={12} />
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-slate-300">
+                      <Clock size={13} />
                       {problem?.timeLimitMinutes ? `${problem.timeLimitMinutes} min` : '30 min'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-6 text-sm text-slate-300 leading-relaxed">
+              <div className="mt-4 space-y-5 text-sm text-slate-300 leading-relaxed">
                 <p className="text-slate-200">
                   {problem?.statement || 'Your AI-generated problem will appear here.'}
                 </p>
@@ -463,16 +487,30 @@ export default function CodePractice() {
           </section>
 
           <section className="min-h-0 flex flex-col gap-4 animate-fade-in-up">
-            <div className="flex-1 min-h-[420px] rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-slate-800/80 bg-slate-950/80">
-                <div className="flex items-center gap-2 text-sm text-slate-200">
-                  <Code size={16} className="text-[color:var(--accent)]" />
-                  Solution Editor
+            <div className="flex-1 min-h-[360px] rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-gradient-to-r from-slate-950/80 to-slate-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-200 font-semibold">
+                    <Code size={18} className="text-teal-400" />
+                    Solution Editor
+                  </div>
+                  <div className="h-1 w-1 rounded-full bg-slate-700" />
+                  <select
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value)}
+                    className="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/50"
+                  >
+                    {LANGUAGE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={resetCode}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition"
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-600 transition"
                   >
                     <RotateCcw size={14} />
                     Reset
@@ -480,10 +518,23 @@ export default function CodePractice() {
                   <button
                     onClick={submitSolution}
                     disabled={!canSubmit}
-                    className="inline-flex items-center gap-2 rounded-full bg-teal-500/90 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-teal-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition ${
+                      canSubmit
+                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-500/20'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    }`}
                   >
-                    {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={14} />
+                        Run Code
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

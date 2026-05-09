@@ -10,3 +10,4 @@ env
 .idea
 .DS_Store
 *.suo
+*.pdf

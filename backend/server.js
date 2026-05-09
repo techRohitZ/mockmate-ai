@@ -163,29 +163,22 @@ IMPORTANT RULES:
 };
 
 const buildPracticePrompt = ({ topic, difficulty, language }) => {
-  return `You are a senior software engineer creating a realistic coding interview question. Generate ONE ${difficulty} problem about ${topic} in ${language}.
+  return `You are a senior software engineer. Generate ONE ${difficulty} coding problem about ${topic}.
 
-Return ONLY valid JSON (no markdown, no extra text, no code fences). The JSON must follow this schema:
-{
-  "title": "<short problem title>",
-  "difficulty": "${difficulty}",
-  "topic": "${topic}",
-  "statement": "<6-10 sentences describing the problem>",
-  "constraints": ["<constraint 1>", "<constraint 2>", "<constraint 3>", "<constraint 4>"],
-  "examples": [
-    { "input": "<example input>", "output": "<example output>", "explanation": "<why that output>" }
-  ],
-  "starterCode": "function or code with proper JSON escaping (use \\n for newlines, avoid backticks, escape quotes)",
-  "tags": ["<tag 1>", "<tag 2>", "<tag 3>"],
-  "timeLimitMinutes": <number between 20 and 45>
-}
+Return ONLY valid JSON. No markdown, backticks, or text outside the JSON.
+JSON must be valid - all strings escaped properly.
+
+Format example:
+{"title":"Problem","difficulty":"${difficulty}","topic":"${topic}","statement":"Description.","constraints":["constraint 1"],"examples":[{"input":"in","output":"out","explanation":"why"}],"starterCode":"function test(x){return x;}","tags":["tag1"],"timeLimitMinutes":30}
 
 Rules:
-- Provide 2-3 examples with realistic inputs and outputs.
-- Use realistic constraints (n up to 1e5 or similar).
-- starterCode: Write as a JSON string. Use \\n for newlines, \\t for tabs, escape all quotes as \\".
-- NEVER use backticks or triple quotes in starterCode. Plain function syntax only.
-- Return ONLY the JSON object, no additional text.
+1. Return ONLY the JSON object - nothing before or after
+2. NO markdown code fences or backticks anywhere
+3. In starterCode use \\n for actual newlines, \\t for tabs
+4. Escape all quotes in strings as \\"
+5. statement: 5-8 sentence clear problem description
+6. examples: provide 2-3 examples minimum
+7. Use realistic constraints like "1 <= n <= 10^5"
 `;
 };
 
@@ -544,26 +537,39 @@ app.post('/api/practice/problem', async (req, res) => {
     });
 
     let problemText = chatCompletion.choices[0]?.message?.content || '{}';
-    // Remove markdown code blocks and clean up
+
+    // Aggressive cleanup: remove all markdown and non-JSON text
     problemText = problemText
       .replace(/^```[a-z]*\n?/gm, '')
+      .replace(/^```/gm, '')
+      .replace(/\n```$/gm, '')
       .replace(/```$/gm, '')
-      .replace(/^\s*`+/gm, '')
-      .replace(/`+\s*$/gm, '')
       .trim();
 
-    // Try to extract JSON if it's wrapped in text
-    const jsonMatch = problemText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      problemText = jsonMatch[0];
+    // Extract JSON object - find first { and last }
+    let startIdx = problemText.indexOf('{');
+    let endIdx = problemText.lastIndexOf('}');
+
+    if (startIdx === -1 || endIdx === -1) {
+      console.error('❌ No JSON object found in response:', problemText.substring(0, 300));
+      return res.status(500).json({ error: 'AI response does not contain valid JSON.' });
     }
+
+    problemText = problemText.substring(startIdx, endIdx + 1);
+
+    // Fix common JSON escaping issues caused by newlines in code
+    // Replace unescaped newlines in the entire JSON
+    problemText = problemText.replace(/([^\\])\n/g, '$1\\n');
+    // Remove other control characters that break JSON
+    problemText = problemText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
     let problemJSON;
     try {
       problemJSON = JSON.parse(problemText);
-    } catch (error) {
-      console.error('❌ Practice problem JSON parse error:', error.message);
-      return res.status(500).json({ error: 'Failed to parse AI problem response.' });
+    } catch (parseError) {
+      console.error('❌ JSON parse failed:', parseError.message);
+      console.error('❌ Problem text sample:', problemText.substring(0, 500));
+      return res.status(500).json({ error: `JSON parse error: ${parseError.message}` });
     }
 
     const toArray = (value) => (Array.isArray(value) ? value : value ? [value] : []);

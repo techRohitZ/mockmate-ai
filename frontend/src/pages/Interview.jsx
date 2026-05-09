@@ -26,6 +26,7 @@ export default function Interview() {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [introAsked, setIntroAsked] = useState(false);
   const [questionsAsked, setQuestionsAsked] = useState(0);
+  const [speechUnsupported, setSpeechUnsupported] = useState(false);
 
   // Interview state
   const [transcript, setTranscript] = useState('');
@@ -44,6 +45,11 @@ export default function Interview() {
 
   // Initialize speech recognition
   useEffect(() => {
+    if (!SpeechRecognition) {
+      setSpeechUnsupported(true);
+      return;
+    }
+
     if (!recognitionRef.current) {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
@@ -104,6 +110,9 @@ export default function Interview() {
   }, [messages]);
 
   const startListening = () => {
+    if (speechUnsupported) {
+      return;
+    }
     if (recognitionRef.current && !isListening) {
       setTranscript(''); // Clear previous transcript
       recognitionRef.current.start();
@@ -326,6 +335,17 @@ export default function Interview() {
 
       <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition"
+            >
+              <span aria-hidden="true">←</span>
+              Back to Dashboard
+            </button>
+            <span className="text-xs text-slate-500">Interview Session</span>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
@@ -372,6 +392,12 @@ export default function Interview() {
             </div>
             <span className="text-xs text-slate-400">{progressPct}%</span>
           </div>
+
+          {speechUnsupported && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              Voice input is not supported in this browser. You can continue the interview using text responses.
+            </div>
+          )}
         </div>
       </header>
 
@@ -539,6 +565,12 @@ export default function Interview() {
                   type="text"
                   value={userInput + transcript}
                   onChange={(e) => setUserInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
                   placeholder={isListening ? 'Listening... speak now...' : 'Type your answer or clarification...'}
                   className={`w-full px-4 py-3 bg-slate-900/80 border rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm ${
                     isListening ? 'border-teal-500/50 focus:border-teal-400 ring-2 ring-teal-500/10' : 'border-slate-800 focus:border-teal-400'
@@ -580,7 +612,7 @@ export default function Interview() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={isListening ? stopListening : startListening}
-              disabled={isLoading}
+              disabled={isLoading || speechUnsupported}
               className={`px-4 py-2.5 rounded-full border text-sm font-semibold transition-all flex items-center gap-2 ${
                 isListening
                   ? 'bg-rose-500/10 border-rose-500/40 text-rose-200'

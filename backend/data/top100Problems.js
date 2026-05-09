@@ -1,5 +1,5 @@
 // Top 100 LeetCode-style coding problems for practice
-export const TOP_100_PROBLEMS = [
+const BASE_PROBLEMS = [
   {
     id: 'top_1',
     title: 'Two Sum',
@@ -277,3 +277,156 @@ export const TOP_100_PROBLEMS = [
     timeLimitMinutes: 40,
   },
 ];
+
+const GENERATED_TITLES = [
+  'Best Time to Buy and Sell Stock',
+  'Contains Duplicate',
+  'Product of Array Except Self',
+  'Maximum Subarray',
+  'Binary Search',
+  'Search in Rotated Sorted Array',
+  'Climbing Stairs',
+  'Coin Change',
+  'Longest Increasing Subsequence',
+  'Jump Game',
+  'Number of Islands',
+  'Clone Graph',
+  'Course Schedule',
+  'Pacific Atlantic Water Flow',
+  'Kth Largest Element',
+  'Top K Frequent Elements',
+  'Group Anagrams',
+  'Longest Palindromic Substring',
+  'Minimum Window Substring',
+  'Permutation in String',
+  'Subarray Sum Equals K',
+  'Merge Intervals',
+  'Insert Interval',
+  'Meeting Rooms II',
+  'Spiral Matrix',
+  'Set Matrix Zeroes',
+  'Rotate Image',
+  'Unique Paths',
+  'Decode Ways',
+  'Word Break',
+  'Combination Sum',
+  'Subsets',
+  'Permutations',
+  'N-Queens',
+  'Generate Parentheses',
+  'Daily Temperatures',
+  'Min Stack',
+  'Evaluate Reverse Polish Notation',
+  'Sliding Window Maximum',
+  'Trapping Rain Water',
+  'Merge Two Sorted Lists',
+  'Reverse Linked List',
+  'Reorder List',
+  'Detect Cycle in Linked List',
+  'LRU Cache',
+  'Copy List with Random Pointer',
+  'Same Tree',
+  'Maximum Depth of Binary Tree',
+  'Validate Binary Search Tree',
+  'Lowest Common Ancestor of BST',
+  'Diameter of Binary Tree',
+  'Balanced Binary Tree',
+  'Serialize and Deserialize Binary Tree',
+  'Construct Binary Tree from Traversals',
+  'Path Sum',
+  'Word Search',
+  'Find Minimum in Rotated Sorted Array',
+  'Median Finder',
+  'Task Scheduler',
+  'Design Twitter',
+  'Network Delay Time',
+  'Cheapest Flights Within K Stops',
+  'Accounts Merge',
+  'Redundant Connection',
+  'Min Cost to Connect Points',
+  'Find the Duplicate Number',
+  'Longest Consecutive Sequence',
+  '3Sum',
+  'Container With Most Water',
+  'Valid Sudoku',
+  'Alien Dictionary',
+  'Reconstruct Itinerary',
+  'Gas Station',
+  'Candy',
+  'Partition Equal Subset Sum',
+  'House Robber II',
+  'Target Sum',
+  'Longest Common Subsequence',
+  'Edit Distance',
+  'Distinct Subsequences',
+  'Interleaving String',
+  'Regular Expression Matching',
+  'Palindromic Substrings',
+  'Longest Repeating Character Replacement',
+  'Find All Anagrams in a String',
+  'K Closest Points to Origin',
+  'Interval List Intersections',
+  'Minimum Path Sum',
+  'Dungeon Game',
+  'Maximum Product Subarray',
+];
+
+const TOPIC_ROTATION = [
+  'Arrays',
+  'Strings',
+  'Hash Maps',
+  'Two Pointers',
+  'Sliding Window',
+  'Stacks',
+  'Queues',
+  'Trees',
+  'Graphs',
+  'Dynamic Programming',
+  'Linked Lists',
+];
+
+const difficultyForIndex = (idx) => {
+  if (idx % 7 === 0) return 'Hard';
+  if (idx % 2 === 0) return 'Medium';
+  return 'Easy';
+};
+
+const generateProblem = (index) => {
+  const idNumber = index + 11;
+  const title = GENERATED_TITLES[index] || `Curated Practice ${idNumber}`;
+  const topic = TOPIC_ROTATION[index % TOPIC_ROTATION.length];
+  const difficulty = difficultyForIndex(index);
+
+  return {
+    id: `top_${idNumber}`,
+    title,
+    difficulty,
+    topic,
+    statement:
+      `Solve ${title} with a clean and efficient approach. Explain your reasoning, choose appropriate data structures, and handle edge cases. Return the expected output exactly as defined in the examples. Focus on correctness first, then optimize time and space complexity.`,
+    constraints: [
+      '1 <= n <= 10^5',
+      'Input values are within standard integer range',
+      'Your solution should be efficient for large inputs',
+    ],
+    examples: [
+      {
+        input: 'input = sample_case_1',
+        output: 'expected_output_1',
+        explanation: 'Apply the core logic and compute the required result.',
+      },
+      {
+        input: 'input = sample_case_2',
+        output: 'expected_output_2',
+        explanation: 'Validate edge cases and maintain correctness.',
+      },
+    ],
+    starterCode: `function solve(input) {\n  // TODO: implement ${title}\n  return null;\n}`,
+    tags: [topic, difficulty === 'Hard' ? 'Advanced' : 'Interview'],
+    timeLimitMinutes: difficulty === 'Hard' ? 40 : difficulty === 'Medium' ? 30 : 20,
+  };
+};
+
+const generatedProblems = Array.from({ length: 90 }, (_, idx) => generateProblem(idx));
+
+export const TOP_100_PROBLEMS = [...BASE_PROBLEMS, ...generatedProblems];
