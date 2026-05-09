@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+MockMateAI_Project_Report.md
+MockMateAI_Project_Report.pdf
 env
 .env.*.local
 *.local
