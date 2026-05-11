@@ -8,12 +8,44 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('authToken'));
   const [loading, setLoading] = useState(true);
 
+  const getUserIdFromToken = (authToken) => {
+    try {
+      const payloadPart = authToken.split('.')[1];
+      if (!payloadPart) return null;
+
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const payload = JSON.parse(atob(padded));
+      return payload.id || payload.userId || payload.sub || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchUserProfile = async (authToken, userId) => {
+    const response = await axios.get(
+      `http://localhost:5000/api/auth/profile/${userId}`,
+      {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }
+    );
+    setUser(response.data.user);
+  };
+
   // Check if user is logged in on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
     if (storedToken) {
       setToken(storedToken);
-      fetchUser(storedToken);
+      setLoading(true);
+      const userId = getUserIdFromToken(storedToken);
+      if (userId) {
+        fetchUserProfile(storedToken, userId)
+          .then(() => setLoading(false))
+          .catch(() => fetchUser(storedToken));
+      } else {
+        fetchUser(storedToken);
+      }
     } else {
       setLoading(false);
     }
@@ -32,14 +64,7 @@ export const AuthProvider = ({ children }) => {
         }
       );
       if (response.data.success) {
-        // Fetch full user profile
-        const userResponse = await axios.get(
-          `http://localhost:5000/api/auth/profile/${response.data.userId}`,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
-        );
-        setUser(userResponse.data.user);
+        await fetchUserProfile(authToken, response.data.userId);
       }
     } catch (error) {
       console.error('Error fetching user:', error);

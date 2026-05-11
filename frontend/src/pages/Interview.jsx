@@ -13,6 +13,7 @@ export default function Interview() {
   const category = searchParams.get('category') || 'frontend';
   const difficulty = searchParams.get('difficulty') || 'Junior (1-3 yrs)';
   const duration = parseInt(searchParams.get('duration')) || 5;
+  const company = searchParams.get('company') || '';
 
   const [showConfig, setShowConfig] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -146,6 +147,7 @@ export default function Interview() {
         sessionId: sessionId,
         domain: category,
         difficulty: difficulty,
+        company: company,
       });
 
       const aiReply = response.data.reply;
@@ -208,7 +210,7 @@ export default function Interview() {
     interviewSessionRef.current.startTime = new Date();
 
     // Send initial greeting asking for intro
-    const greeting = `Hi there! I'm your AI interviewer for this ${difficulty.split(' ')[0]} level ${category} interview. Before we dive into technical questions, could you please introduce yourself? Tell me about your background, current role, and what you hope to gain from this practice interview. Just speak naturally or type your response!`;
+    const greeting = `Hi, I'm your interviewer for this ${difficulty.split(' ')[0]} ${category} session. Please give a quick intro: current role, focus area, and goals for today.`;
     setMessages([{ type: 'ai', text: greeting }]);
     setAiSpeaking(true);
 
@@ -333,27 +335,23 @@ export default function Interview() {
       <div className="pointer-events-none absolute -top-40 right-[-10%] h-80 w-80 rounded-full bg-teal-500/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-30%] left-[-10%] h-96 w-96 rounded-full bg-amber-400/10 blur-3xl" />
 
-      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-6 py-5">
-        <div className="max-w-7xl mx-auto flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition"
-            >
-              <span aria-hidden="true">←</span>
-              Back to Dashboard
-            </button>
-            <span className="text-xs text-slate-500">Interview Session</span>
-          </div>
-
+      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition"
+              >
+                <span aria-hidden="true">←</span>
+                Back to Dashboard
+              </button>
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
                 <span className="font-bold text-lg">AI</span>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-teal-300 font-semibold">Mock Interview Room</p>
-                <p className="text-lg font-semibold capitalize text-slate-100">
+                <p className="text-[11px] uppercase tracking-wider text-teal-300 font-semibold">Mock Interview Room</p>
+                <p className="text-base md:text-lg font-semibold capitalize text-slate-100">
                   {category} Engineer • {difficulty}
                 </p>
               </div>
@@ -383,7 +381,7 @@ export default function Interview() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-teal-500 via-cyan-500 to-amber-400 transition-all duration-300"
@@ -401,12 +399,12 @@ export default function Interview() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 px-6 py-6">
-        <div className="h-full min-h-0 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 max-w-7xl mx-auto overflow-hidden">
-          <section className="min-h-0 flex flex-col gap-6 overflow-y-auto">
+      <div className="flex-1 min-h-0 px-6 py-4">
+        <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_480px] gap-5 max-w-7xl mx-auto overflow-hidden">
+          <section className="min-h-0 flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div
-                className={`relative rounded-2xl border border-slate-800/80 bg-slate-950/60 overflow-hidden min-h-[280px] ${
+                className={`relative rounded-2xl border border-slate-800/80 bg-slate-950/60 overflow-hidden min-h-[240px] ${
                   aiSpeaking ? 'ring-2 ring-teal-400/50' : 'ring-1 ring-slate-800/60'
                 }`}
               >
@@ -416,8 +414,13 @@ export default function Interview() {
                     <div className="flex items-center gap-2 font-semibold">
                       <span className={`h-2 w-2 rounded-full ${aiSpeaking ? 'bg-teal-400 animate-pulse' : 'bg-slate-500'}`} />
                       AI Interviewer
+                      <span className="rounded-full border border-slate-700 bg-slate-900/70 px-2 py-0.5 text-[11px] text-slate-300">
+                        Professional
+                      </span>
                     </div>
-                    <span className="text-slate-400">Host</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${aiSpeaking ? 'bg-teal-500/20 text-teal-200' : 'bg-slate-800/60 text-slate-300'}`}>
+                      {aiSpeaking ? 'Speaking' : 'Listening'}
+                    </span>
                   </div>
                   <div className="flex flex-col items-center">
                     <div
@@ -428,14 +431,22 @@ export default function Interview() {
                       AI
                     </div>
                     <p className="mt-3 text-sm text-slate-300">{aiSpeaking ? 'Speaking now' : 'Ready to listen'}</p>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                      <div className="flex items-end gap-1">
+                        <span className={`h-2 w-1 rounded-full ${aiSpeaking ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                        <span className={`h-3 w-1 rounded-full ${aiSpeaking ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                        <span className={`h-2 w-1 rounded-full ${aiSpeaking ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                      </div>
+                      <span>{aiSpeaking ? 'Voice active' : 'Voice idle'}</span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span
                       className={`px-2 py-1 rounded-full ${
-                        aiSpeaking ? 'bg-teal-500/20 text-teal-200' : 'bg-slate-800/60 text-slate-300'
+                        isMuted ? 'bg-rose-500/10 text-rose-200' : 'bg-slate-800/60 text-slate-300'
                       }`}
                     >
-                      {aiSpeaking ? 'Speaking' : 'Idle'}
+                      {isMuted ? 'Voice muted' : 'Voice on'}
                     </span>
                     <button
                       onClick={() => setIsMuted(!isMuted)}
@@ -453,7 +464,7 @@ export default function Interview() {
               </div>
 
               <div
-                className={`relative rounded-2xl border border-slate-800/80 bg-slate-950/60 overflow-hidden min-h-[280px] ${
+                className={`relative rounded-2xl border border-slate-800/80 bg-slate-950/60 overflow-hidden min-h-[240px] ${
                   isListening ? 'ring-2 ring-teal-400/50' : 'ring-1 ring-slate-800/60'
                 }`}
               >
@@ -522,9 +533,9 @@ export default function Interview() {
           </section>
 
           <aside className="min-h-0 flex flex-col rounded-2xl border border-slate-800/80 bg-slate-950/70 backdrop-blur overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-800/70">
-              <p className="text-sm font-semibold text-slate-100">Chat</p>
-              <p className="text-xs text-slate-400 mt-1">Respond in chat or use the mic controls below.</p>
+            <div className="px-5 py-4 border-b border-slate-800/70 bg-gradient-to-r from-slate-900/70 to-slate-950/70">
+              <p className="text-sm font-semibold text-slate-100">Live conversation</p>
+              <p className="text-xs text-slate-400 mt-1">Answer concisely. The AI will follow up based on your response.</p>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {messages.length === 0 ? (
@@ -535,7 +546,7 @@ export default function Interview() {
                 messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-sm px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                      className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                         msg.type === 'user'
                           ? 'bg-teal-500/20 border border-teal-500/30 text-teal-100 rounded-br-none'
                           : 'bg-slate-900/70 border border-slate-800 text-slate-100 rounded-bl-none'

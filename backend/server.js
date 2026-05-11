@@ -9,6 +9,7 @@ import Interview from './models/Interview.js';
 import authRoutes from './routes/auth.js';
 import contactRoutes from './routes/contact.js';
 import { TOP_100_PROBLEMS } from './data/top100Problems.js';
+import { COMPANY_QUESTION_BANKS } from './data/companyQuestionBanks.js';
 
 dotenv.config();
 
@@ -125,15 +126,14 @@ const getDomainPrompt = (domain, difficulty) => {
 
 IMPORTANT RULES:
 - Ask ONE question at a time
-- Listen actively and acknowledge good answers with phrases like "That's a great point" or "Exactly right"
-- For weaker answers, gently redirect: "Let me clarify... what about..." or "That's a start, but consider..."
-- Ask follow-up questions that dig deeper into their understanding
+- Keep every response under 3 short sentences total
+- After each candidate answer, give a brief acknowledgment or micro-feedback (1 short sentence max)
+- Do NOT provide full corrections, full explanations, or solutions
+- Ask a concise follow-up question that digs deeper
+- If the candidate asks a direct question, answer in 1-2 short sentences, then ask a follow-up
 - Make it a natural conversation, not an interrogation
 - DO NOT ask them to write code or pseudocode - this is purely theoretical
-- Evaluate their answers on: understanding, real-world application, critical thinking
-- Keep responses concise (2-3 sentences) unless they ask for more detail
-- Never provide a full answer or full explanation
-- Avoid teaching or solving; provide only short acknowledgment and a follow-up question
+- Evaluate internally based on understanding, real-world application, and critical thinking
 - Always end with a follow-up question that moves the interview forward`;
 
   const difficultyMap = {
@@ -317,12 +317,75 @@ Provide a thorough, professional review that would help this candidate improve t
 `;
 };
 
+const normalizeCompanyKey = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+const getCompanyBank = (companyValue) => {
+  const key = normalizeCompanyKey(companyValue);
+  if (!key) {
+    return null;
+  }
+  return COMPANY_QUESTION_BANKS[key] || null;
+};
+
+const buildCompanyBankPrompt = ({ bank, question, followUp, stage }) => {
+  const followUpLine = followUp ? `Follow-up question: ${followUp}` : 'Follow-up question: none';
+  return `Company interview focus: ${bank.name}. Use the company question bank strictly.
+Current stage: ${stage}
+Primary question: ${question.question}
+${followUpLine}
+Rules: Ask exactly one question. If stage is "primary", ask the primary question. If stage is "followUp", ask the follow-up question. Do not introduce new topics.`;
+};
+
+app.get('/api/interview/company-banks', (req, res) => {
+  try {
+    const companies = Object.values(COMPANY_QUESTION_BANKS).map((bank) => ({
+      id: bank.id,
+      name: bank.name,
+      tag: bank.tag,
+      questionCount: bank.questions.length,
+      difficulty: bank.difficulty,
+      duration: bank.duration,
+      focus: bank.focus,
+      topics: bank.topics,
+      interviewCategory: bank.interviewCategory,
+      interviewDifficulty: bank.interviewDifficulty,
+      sampleQuestions: bank.questions.slice(0, 3).map((item) => item.question),
+    }));
+
+    res.json({ companies });
+  } catch (error) {
+    console.error('❌ Company banks endpoint error:', error);
+    res.status(500).json({ error: 'Failed to load company question banks.' });
+  }
+});
+
+app.get('/api/interview/company-bank/:company', (req, res) => {
+  try {
+    const bank = getCompanyBank(req.params.company);
+
+    if (!bank) {
+      return res.status(404).json({ error: 'Company bank not found.' });
+    }
+
+    res.json({
+      company: { id: bank.id, name: bank.name },
+      questions: bank.questions,
+    });
+  } catch (error) {
+    console.error('❌ Company bank detail error:', error);
+    res.status(500).json({ error: 'Failed to load company question bank.' });
+  }
+});
+
 // ==========================================
 // 1. MAIN INTERVIEW CHAT ENDPOINT
 // ==========================================
 app.post('/api/interview', async (req, res) => {
   try {
-    const { userMessage, sessionId, domain, difficulty } = req.body;
+    const { userMessage, sessionId, domain, difficulty, company } = req.body;
 
     console.log(`[Interview] Received: domain=${domain}, difficulty=${difficulty}, sessionId=${sessionId}`);
 
@@ -339,6 +402,9 @@ app.post('/api/interview', async (req, res) => {
     // Use sessionId to maintain conversation history per session
     const sid = sessionId || 'default';
     const userId = getUserIdFromRequest(req);
+    const companyBank = getCompanyBank(company);
+    const effectiveDomain = companyBank?.interviewCategory || domain || 'frontend';
+    const effectiveDifficulty = companyBank?.interviewDifficulty || difficulty || 'Junior (1-3 yrs)';
 
     // Initialize session if it doesn't exist
     if (!interviewSessions[sid]) {
@@ -346,16 +412,18 @@ app.post('/api/interview', async (req, res) => {
       interviewSessions[sid] = [
         {
           role: 'system',
-          content: getDomainPrompt(domain || 'frontend', difficulty || 'Junior (1-3 yrs)'),
+          content: getDomainPrompt(effectiveDomain, effectiveDifficulty),
         },
       ];
 
       interviewArtifacts[sid] = {
         userId: userId || null,
-        domain: domain || 'frontend',
-        difficulty: difficulty || 'Junior (1-3 yrs)',
+        domain: effectiveDomain,
+        difficulty: effectiveDifficulty,
         responses: [],
         evaluation: null,
+        companyKey: companyBank?.id || null,
+        companyBankState: companyBank ? { index: 0, stage: 'primary' } : null,
       };
     }
 
@@ -364,10 +432,43 @@ app.post('/api/interview', async (req, res) => {
 
     try {
       console.log(`[Interview] Calling Groq API with ${GROQ_MODEL}...`);
+      const promptMessages = [...conversationHistory];
+      let bankQuestion = null;
+      let followUp = null;
+      let bankState = null;
+
+      if (companyBank?.questions?.length) {
+        if (!interviewArtifacts[sid]) {
+          interviewArtifacts[sid] = {
+            userId: userId || null,
+            domain: effectiveDomain,
+            difficulty: effectiveDifficulty,
+            responses: [],
+            evaluation: null,
+            companyKey: companyBank.id,
+            companyBankState: { index: 0, stage: 'primary' },
+          };
+        }
+
+        if (interviewArtifacts[sid].companyKey !== companyBank.id) {
+          interviewArtifacts[sid].companyKey = companyBank.id;
+          interviewArtifacts[sid].companyBankState = { index: 0, stage: 'primary' };
+        }
+
+        bankState = interviewArtifacts[sid].companyBankState || { index: 0, stage: 'primary' };
+        bankQuestion = companyBank.questions[bankState.index % companyBank.questions.length];
+        followUp = Array.isArray(bankQuestion.followUps) ? bankQuestion.followUps[0] : null;
+        const stage = followUp ? bankState.stage : 'primary';
+        promptMessages.push({
+          role: 'system',
+          content: buildCompanyBankPrompt({ bank: companyBank, question: bankQuestion, followUp, stage }),
+        });
+      }
+
       const chatCompletion = await groq.chat.completions.create({
-        messages: conversationHistory,
+        messages: promptMessages,
         model: GROQ_MODEL,
-        max_tokens: 300,
+        max_tokens: 200,
         temperature: 0.8,
       });
 
@@ -388,8 +489,8 @@ app.post('/api/interview', async (req, res) => {
       }
 
       interviewArtifacts[sid].userId = userId || interviewArtifacts[sid].userId;
-      interviewArtifacts[sid].domain = domain || interviewArtifacts[sid].domain;
-      interviewArtifacts[sid].difficulty = difficulty || interviewArtifacts[sid].difficulty;
+      interviewArtifacts[sid].domain = effectiveDomain || interviewArtifacts[sid].domain;
+      interviewArtifacts[sid].difficulty = effectiveDifficulty || interviewArtifacts[sid].difficulty;
 
       const latestQuestion = [...conversationHistory]
         .slice(0, -1)
@@ -401,6 +502,20 @@ app.post('/api/interview', async (req, res) => {
         answer: userMessage,
         aiEvaluation: aiResponse,
       });
+
+      if (companyBank && bankQuestion) {
+        const state = interviewArtifacts[sid].companyBankState || { index: 0, stage: 'primary' };
+        const hasFollowUp = Boolean(followUp);
+
+        if (hasFollowUp && state.stage === 'primary') {
+          state.stage = 'followUp';
+        } else {
+          state.stage = 'primary';
+          state.index = (state.index + 1) % companyBank.questions.length;
+        }
+
+        interviewArtifacts[sid].companyBankState = state;
+      }
 
       // Clean up old sessions (keep last 50 messages to avoid token bloat)
       if (conversationHistory.length > 50) {

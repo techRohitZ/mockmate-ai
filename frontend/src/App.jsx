@@ -9,6 +9,8 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Interview from './pages/Interview';
 import CodePractice from './pages/CodePractice';
+import CompanyCollections from './pages/CompanyCollections';
+import StudyTracks from './pages/StudyTracks';
 
 export default function App() {
   return (
@@ -44,6 +46,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/collections" element={<CompanyCollections />} />
+          <Route path="/tracks" element={<StudyTracks />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

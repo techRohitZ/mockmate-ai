@@ -65,15 +65,15 @@ export default function Home() {
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-teal-200">
               <Sparkles size={14} />
-              AI interview room 2.0
+              AI mock interview platform
             </div>
             <div className="space-y-5">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight text-white">
-                Practice like it is the real interview. Get feedback that actually moves the needle.
+                Realistic interviews. Structured feedback. Measurable growth.
               </h1>
               <p className="text-lg text-slate-300 max-w-xl">
-                MockMate AI blends live conversation, coding prompts, and performance analytics into one realistic loop.
-                Train your communication and technical skills in the same session.
+                MockMate AI simulates real interview flow with targeted questions, coding prompts, and actionable reports
+                so you improve faster with every session.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -81,13 +81,13 @@ export default function Home() {
                 onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}
                 className="px-7 py-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 font-semibold inline-flex items-center gap-2 hover:shadow-lg hover:shadow-teal-500/50 transition"
               >
-                Start Free Interview <ArrowRight size={18} />
+                Start mock interview <ArrowRight size={18} />
               </button>
               <button
                 onClick={() => navigate(isAuthenticated ? '/practice' : '/login')}
                 className="px-7 py-3 rounded-lg border border-slate-700 text-slate-200 font-semibold hover:bg-slate-900 transition"
               >
-                Explore Practice Lab
+                Open practice lab
               </button>
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
@@ -112,11 +112,11 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-slate-300">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Live mock session
+                  Session snapshot
                 </div>
                 <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">Mid-level</span>
-                  <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">28:10</span>
+                  <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">Level: Mid</span>
+                  <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1">24:10</span>
                 </div>
               </div>
 
@@ -133,7 +133,7 @@ export default function Home() {
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span>You</span>
-                    <span className="text-emerald-300">Answering...</span>
+                    <span className="text-emerald-300">Responding</span>
                   </div>
                   <p className="mt-3 text-sm text-slate-200">
                     I would keep a rolling sum and update it in $O(1)$ by removing the outgoing element and adding the incoming element.
@@ -247,7 +247,10 @@ export default function Home() {
                   <div key={plan.name} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                     <p className="text-sm font-semibold text-white">{plan.name}</p>
                     <p className="mt-2 text-xs text-slate-400">{plan.count}</p>
-                    <button className="mt-4 text-xs font-semibold text-teal-300 hover:text-teal-200 transition">
+                    <button
+                      onClick={() => navigate(`/collections?company=${encodeURIComponent(plan.name)}`)}
+                      className="mt-4 text-xs font-semibold text-teal-300 hover:text-teal-200 transition"
+                    >
                       View plan
                     </button>
                   </div>
@@ -268,7 +271,10 @@ export default function Home() {
                         <p className="text-sm font-semibold text-white">{track.name}</p>
                         <p className="text-xs text-slate-400">{track.count}</p>
                       </div>
-                      <button className="text-xs font-semibold text-teal-300 hover:text-teal-200 transition">
+                      <button
+                        onClick={() => navigate(`/tracks?track=${encodeURIComponent(track.name)}`)}
+                        className="text-xs font-semibold text-teal-300 hover:text-teal-200 transition"
+                      >
                         Start
                       </button>
                     </div>
@@ -281,7 +287,10 @@ export default function Home() {
                 <p className="mt-2 text-sm text-slate-300">
                   Build a personalized schedule based on your timeline, role, and target company list.
                 </p>
-                <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-200">
+                <button
+                  onClick={() => navigate('/tracks?track=custom')}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-200"
+                >
                   Build custom plan <ArrowRight size={14} />
                 </button>
               </div>

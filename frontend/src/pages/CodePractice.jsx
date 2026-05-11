@@ -225,7 +225,7 @@ export default function CodePractice() {
       <div className="pointer-events-none absolute bottom-[-30%] left-[-5%] h-96 w-96 rounded-full bg-amber-400/10 blur-3xl animate-float-slow" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.12),transparent_55%)]" />
 
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
+      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
           <div className="flex items-start gap-4">
             <button
@@ -337,16 +337,16 @@ export default function CodePractice() {
 
       </header>
 
-      <main className="relative z-10 flex-1 min-h-0 px-6 py-5">
+      <main className="relative z-10 flex-1 min-h-0 px-5 py-5 lg:px-6">
         <div
           className={`max-w-7xl mx-auto grid grid-cols-1 gap-6 min-h-0 ${
             problemSource === 'curated'
-              ? 'xl:grid-cols-[300px_1.35fr_1.05fr]'
-              : 'xl:grid-cols-[1.3fr_1fr]'
+              ? 'xl:grid-cols-[300px_minmax(0,1.45fr)_minmax(380px,0.95fr)]'
+              : 'xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,0.95fr)]'
           }`}
         >
           {problemSource === 'curated' && (
-            <aside className="min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/70 overflow-hidden flex flex-col animate-fade-in-up">
+            <aside className="min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/70 overflow-hidden flex flex-col animate-fade-in-up xl:sticky xl:top-6 xl:h-[calc(100vh-7rem)]">
               <div className="px-4 py-4 border-b border-slate-800/70 bg-slate-950/90">
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Top 100</p>
                 <h2 className="mt-1 text-sm font-semibold text-slate-100">Problem List</h2>
@@ -398,7 +398,7 @@ export default function CodePractice() {
             </aside>
           )}
 
-          <section className="min-h-0 flex flex-col gap-6 animate-fade-in-up">
+          <section className="min-h-0 flex flex-col gap-5 animate-fade-in-up">
             {error && (
               <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200 flex items-center gap-2">
                 <AlertTriangle size={16} />
@@ -406,11 +406,11 @@ export default function CodePractice() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/60 to-slate-950/80 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.8)]">
+            <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/60 to-slate-950/80 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.8)] xl:sticky xl:top-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1">
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">Problem Statement</p>
-                  <h2 className="mt-2 text-2xl font-bold text-slate-50">
+                  <h2 className="mt-2 text-2xl font-bold text-slate-50 leading-tight">
                     {problem?.title || 'Generating problem...'}
                   </h2>
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
@@ -472,7 +472,7 @@ export default function CodePractice() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-6">
+            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-100">Notes & Approach</h3>
                 <span className="text-xs text-slate-500">Auto-saved locally</span>
@@ -486,8 +486,8 @@ export default function CodePractice() {
             </div>
           </section>
 
-          <section className="min-h-0 flex flex-col gap-4 animate-fade-in-up">
-            <div className="flex-1 min-h-[360px] rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
+          <section className="min-h-0 flex flex-col gap-4 animate-fade-in-up xl:sticky xl:top-6 xl:h-[calc(100vh-7rem)]">
+            <div className="flex-1 min-h-[320px] rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-gradient-to-r from-slate-950/80 to-slate-900/50">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-200 font-semibold">
@@ -557,7 +557,7 @@ export default function CodePractice() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-6 overflow-y-auto max-h-[600px]">
+            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-5 overflow-y-auto max-h-[420px]">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-sm text-slate-200">
                   <Zap size={16} className="text-amber-400" />
