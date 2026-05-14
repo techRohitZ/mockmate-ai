@@ -7,6 +7,8 @@ import {
   Clock,
   Code,
   Loader2,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   Sparkles,
   Tag,
@@ -83,6 +85,7 @@ export default function CodePractice() {
   const [curatedProblems, setCuratedProblems] = useState([]);
   const [loadingProblems, setLoadingProblems] = useState(false);
   const [problemStats, setProblemStats] = useState(null);
+  const [isEditorCompact, setIsEditorCompact] = useState(false);
   const [sessionId] = useState(
     () => `practice_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   );
@@ -210,6 +213,42 @@ export default function CodePractice() {
     setCode(problem?.starterCode || '');
   };
 
+  const handleDownloadReport = () => {
+    if (!submission) {
+      return;
+    }
+
+    const safeTitle = (problem?.title || 'mockmate-report')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+    const reportPayload = {
+      generatedAt: new Date().toISOString(),
+      problem: {
+        id: problemId,
+        title: problem?.title,
+        difficulty: problem?.difficulty,
+        topic: problem?.topic,
+      },
+      language,
+      summary: submission.summary || null,
+      score: submission.score ?? null,
+      verdict: submission.verdict || null,
+      evaluation: submission,
+    };
+
+    const blob = new Blob([JSON.stringify(reportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${safeTitle || 'mockmate-report'}-${Date.now()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const canSubmit = code.trim().length > 0 && !isSubmitting && !isGenerating;
 
   return (
@@ -225,23 +264,40 @@ export default function CodePractice() {
       <div className="pointer-events-none absolute bottom-[-30%] left-[-5%] h-96 w-96 rounded-full bg-amber-400/10 blur-3xl animate-float-slow" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.12),transparent_55%)]" />
 
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
-          <div className="flex items-start gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition"
-            >
-              <ArrowLeft size={16} />
-              Back to Dashboard
-            </button>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Practice Workspace</p>
-              <h1 className="text-xl font-semibold text-slate-100">Code Practice</h1>
+      <header className="sticky top-0 z-20 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-slate-200 hover:text-white hover:bg-slate-800 transition"
+                aria-label="Back to dashboard"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-500 p-[1px] shadow-[0_12px_30px_-18px_rgba(45,212,191,0.9)]">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-950 text-[11px] font-semibold tracking-[0.18em] text-slate-100">
+                    MM
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">MockMate AI</p>
+                  <h1 className="text-xl font-semibold text-slate-100">Code Practice</h1>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 px-3 py-2 text-xs text-slate-300">
+              {isGenerating || loadingProblems ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Sparkles size={14} className="text-[color:var(--accent)]" />
+              )}
+              {isGenerating ? 'Generating problem...' : loadingProblems ? 'Loading problems...' : 'Problem ready'}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 p-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/40 p-2">
             {/* Problem Source Toggle */}
             <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 p-1">
               <button
@@ -269,15 +325,6 @@ export default function CodePractice() {
                 <TrendingUp size={13} />
                 Top 100 Problems
               </button>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/70 px-3 py-2 text-xs text-slate-300">
-              {isGenerating || loadingProblems ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Sparkles size={14} className="text-[color:var(--accent)]" />
-              )}
-              {isGenerating ? 'Generating problem...' : loadingProblems ? 'Loading problems...' : 'Problem ready'}
             </div>
 
             {problemSource === 'ai' ? (
@@ -486,8 +533,8 @@ export default function CodePractice() {
             </div>
           </section>
 
-          <section className="min-h-0 flex flex-col gap-4 animate-fade-in-up xl:sticky xl:top-6 xl:h-[calc(100vh-7rem)]">
-            <div className="flex-1 min-h-[320px] rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
+          <section className="min-h-0 flex flex-col gap-4 animate-fade-in-up xl:sticky xl:top-6">
+            <div className="w-full rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden flex flex-col">
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-gradient-to-r from-slate-950/80 to-slate-900/50">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-200 font-semibold">
@@ -508,6 +555,15 @@ export default function CodePractice() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditorCompact((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-600 transition"
+                    aria-pressed={isEditorCompact}
+                    title={isEditorCompact ? 'Expand editor' : 'Compact editor'}
+                  >
+                    {isEditorCompact ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+                    {isEditorCompact ? 'Expand' : 'Compact'}
+                  </button>
                   <button
                     onClick={resetCode}
                     className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-600 transition"
@@ -538,7 +594,11 @@ export default function CodePractice() {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
+              <div
+                className={`transition-[height] duration-300 ${
+                  isEditorCompact ? 'h-[280px] sm:h-[320px]' : 'h-[420px] lg:h-[560px]'
+                }`}
+              >
                 <Editor
                   height="100%"
                   theme="vs-dark"
@@ -557,13 +617,23 @@ export default function CodePractice() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-5 overflow-y-auto max-h-[420px]">
-              <div className="flex items-center justify-between mb-4">
+            <div className="rounded-2xl border border-slate-800/80 bg-[color:var(--panel)] p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2 text-sm text-slate-200">
                   <Zap size={16} className="text-amber-400" />
                   Professional Code Review
                 </div>
-                <span className="text-xs text-slate-500">AI Analysis</span>
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <span>AI Analysis</span>
+                  {submission && (
+                    <button
+                      onClick={handleDownloadReport}
+                      className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800 transition"
+                    >
+                      Download report
+                    </button>
+                  )}
+                </div>
               </div>
 
               {!submission && (

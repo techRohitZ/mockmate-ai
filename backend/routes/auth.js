@@ -1,9 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import Interview from '../models/Interview.js';
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -89,6 +91,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    if (user.authProvider === 'google') {
+      return res.status(400).json({ error: 'Use Google sign-in for this account' });
+    }
+
     // Check password
     const isPasswordCorrect = await user.matchPassword(password);
     if (!isPasswordCorrect) {
@@ -109,6 +115,70 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// GOOGLE LOGIN
+router.post('/google', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: 'Google token is required' });
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ error: 'Google login is not configured' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const name = payload?.name || payload?.given_name || 'Google User';
+    const googleId = payload?.sub;
+    const avatar = payload?.picture || '';
+
+    if (!email || !googleId) {
+      return res.status(400).json({ error: 'Unable to verify Google account' });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      if (user.authProvider !== 'google') {
+        return res.status(400).json({ error: 'Account already exists. Use email and password.' });
+      }
+      user.googleId = user.googleId || googleId;
+      user.avatar = user.avatar || avatar;
+      if (!user.name && name) {
+        user.name = name;
+      }
+      await user.save();
+    } else {
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        avatar,
+        authProvider: 'google',
+      });
+    }
+
+    const token = generateToken(user._id);
+    user.password = undefined;
+
+    res.status(200).json({
+      success: true,
+      token,
+      user,
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ error: 'Google login failed' });
   }
 });
 

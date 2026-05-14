@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart3, Lock, Mail, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,11 +7,68 @@ import Footer from '../components/Footer';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const googleButtonRef = useRef(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    const initializeGoogle = () => {
+      if (!window.google?.accounts?.id || !googleButtonRef.current) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: async (response) => {
+          if (!response?.credential) {
+            setError('Google sign-in failed. Please try again.');
+            return;
+          }
+
+          setLoading(true);
+          setError('');
+          const result = await loginWithGoogle(response.credential);
+          if (result.success) {
+            navigate('/dashboard');
+          } else {
+            setError(result.error || 'Google sign-in failed');
+          }
+          setLoading(false);
+        },
+      });
+
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        width: '100%',
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    document.body.appendChild(script);
+
+    return () => {
+      script.onload = null;
+    };
+  }, [googleClientId, loginWithGoogle, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -47,139 +104,164 @@ export default function Login() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-        <div className="relative flex-1 flex items-center justify-center px-6 pt-32 pb-20">
-          {/* Background gradient effect */}
-          <div className="absolute -top-40 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="min-h-screen bg-[#0b0f1a] text-white flex flex-col">
+        <section
+          className="relative flex-1 px-6 pt-24 pb-20 overflow-hidden"
+          style={{ fontFamily: '"Space Grotesk", "Sora", sans-serif' }}
+        >
+          <style>
+            {"@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap');"}
+          </style>
+          <div className="pointer-events-none absolute -top-48 left-[-8%] h-[28rem] w-[28rem] rounded-full bg-emerald-400/20 blur-[120px]" />
+          <div className="pointer-events-none absolute top-24 right-[-12%] h-[24rem] w-[24rem] rounded-full bg-cyan-400/10 blur-[120px]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.12),transparent_55%)]" />
 
-          <div className="relative w-full max-w-5xl">
-            <div className="grid lg:grid-cols-[1fr_0.9fr] gap-10 items-start">
-              <div>
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white font-bold">MM</span>
-                  </div>
-                  <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                  <p className="text-slate-400">Sign in to continue your interview prep</p>
-                </div>
-
-                {/* Card */}
-                <div className="border border-slate-800 rounded-2xl p-8 bg-slate-900/60 backdrop-blur">
-                  <form onSubmit={handleLogin} className="space-y-5">
-                {/* Error Message */}
-                {error && (
-                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    {error}
-                  </div>
-                )}
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail size={18} className="absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full bg-slate-900/70 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-500/40 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-                  <div className="relative">
-                    <Lock size={18} className="absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-900/70 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-500/40 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Remember & Forgot */}
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center text-slate-400 hover:text-slate-300 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-slate-600 bg-slate-800 accent-teal-500" />
-                    <span className="ml-2">Remember me</span>
-                  </label>
-                  <a href="#" className="text-teal-300 hover:text-teal-200 transition-colors">
-                    Forgot password?
-                  </a>
-                </div>
-
-                {/* Login Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-lg font-semibold hover:shadow-lg hover:shadow-teal-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </button>
-                  </form>
-
-                  {/* Divider */}
-                  <div className="my-6 flex items-center">
-                    <div className="flex-1 h-px bg-slate-700"></div>
-                    <span className="px-3 text-sm text-slate-500">OR</span>
-                    <div className="flex-1 h-px bg-slate-700"></div>
-                  </div>
-
-                  {/* Social Login */}
-                  <button className="w-full py-2.5 border border-slate-700 rounded-lg font-semibold text-slate-300 hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
-                    <Mail size={18} />
-                    Continue with Google
-                  </button>
-
-                  {/* Sign Up Link */}
-                  <p className="text-center text-slate-400 mt-6">
-                    Don't have an account?{' '}
-                    <button
-                      onClick={() => navigate('/signup')}
-                      className="text-teal-300 hover:text-teal-200 font-semibold transition-colors"
-                    >
-                      Sign up
-                    </button>
-                  </p>
-                </div>
+          <div className="relative max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.32em] text-slate-300">
+                <Sparkles size={14} className="text-emerald-300" />
+                Secure sign-in
+              </div>
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-6xl font-semibold leading-tight">
+                  Welcome back.
+                  <span className="block text-slate-300">Let us pick up where you left off.</span>
+                </h1>
+                <p className="text-slate-300 max-w-xl">
+                  Resume mock interviews, review feedback, and keep your momentum with a calm, focused workspace.
+                </p>
               </div>
 
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
-                <div className="flex items-center gap-3">
-                  <Sparkles size={18} className="text-teal-300" />
-                  <h2 className="text-xl font-semibold">Why MockMate AI?</h2>
-                </div>
-                <p className="mt-3 text-sm text-slate-300">
-                  Train like it is the real interview with guided mock sessions, coaching feedback, and progress analytics.
-                </p>
-                <div className="mt-6 space-y-4">
-                  {[
-                    { label: 'Live interview flow', icon: MessageSquare },
-                    { label: 'Structured feedback', icon: BarChart3 },
-                    { label: 'Secure practice history', icon: ShieldCheck },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">
-                      <item.icon size={16} className="text-teal-300" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Live interview flow', icon: MessageSquare, detail: 'Structured, conversational questions.' },
+                  { label: 'Report-ready feedback', icon: BarChart3, detail: 'Clear takeaways after every session.' },
+                  { label: 'Private practice history', icon: ShieldCheck, detail: 'Secure logs of your prep.' },
+                  { label: 'AI coaching notes', icon: Sparkles, detail: 'Short, actionable feedback.' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200"
+                  >
+                    <div className="flex items-center gap-2 text-slate-100 font-semibold">
+                      <item.icon size={16} className="text-emerald-300" />
                       {item.label}
                     </div>
-                  ))}
+                    <p className="mt-2 text-xs text-slate-400">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-emerald-200">Session snapshot</p>
+                    <p className="mt-2 text-sm text-slate-200">Last mock interview • Frontend</p>
+                  </div>
+                  <span className="text-2xl font-semibold text-emerald-200">82%</span>
                 </div>
-                <div className="mt-6 rounded-2xl border border-teal-500/30 bg-teal-500/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-teal-200">Quick win</p>
-                  <p className="mt-2 text-sm text-slate-200">Finish one mock interview to unlock your first report.</p>
+                <div className="mt-4 h-2 rounded-full bg-slate-900/70">
+                  <div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400" style={{ width: '82%' }} />
                 </div>
               </div>
             </div>
+
+            <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 sm:p-8 shadow-[0_30px_90px_-60px_rgba(16,185,129,0.55)] backdrop-blur">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">MockMate AI</p>
+                  <h2 className="mt-2 text-2xl font-semibold">Sign in</h2>
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
+                  <span className="text-sm font-bold text-slate-900">MM</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleLogin} className="mt-6 space-y-5">
+                {error && (
+                  <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-500">Email address</label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-4 top-3.5 text-slate-500" />
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full rounded-2xl bg-slate-950/70 border border-white/10 pl-11 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-[0.3em] text-slate-500">Password</label>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-4 top-3.5 text-slate-500" />
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-2xl bg-slate-950/70 border border-white/10 pl-11 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-800 accent-emerald-400" />
+                    Remember me
+                  </label>
+                  <button type="button" className="text-emerald-300 hover:text-emerald-200 transition">
+                    Forgot password?
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-400 py-3 font-semibold text-slate-900 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </button>
+              </form>
+
+              <div className="my-6 flex items-center">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="px-3 text-xs uppercase tracking-[0.25em] text-slate-500">Or</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <div className="space-y-3">
+                <div ref={googleButtonRef} className="min-h-[44px]" />
+                {!googleClientId && (
+                  <p className="text-xs text-amber-300">
+                    Google sign-in is not configured. Add `VITE_GOOGLE_CLIENT_ID` to enable it.
+                  </p>
+                )}
+              </div>
+
+              <p className="text-center text-sm text-slate-400 mt-6">
+                Don't have an account?{' '}
+                <button
+                  onClick={() => navigate('/signup')}
+                  className="text-emerald-300 hover:text-emerald-200 font-semibold"
+                >
+                  Sign up
+                </button>
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
         <Footer />
       </div>
     </>

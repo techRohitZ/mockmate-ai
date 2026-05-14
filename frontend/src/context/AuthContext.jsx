@@ -128,6 +128,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/google', { idToken });
+
+      if (response.data.success) {
+        const authToken = response.data.token;
+        localStorage.setItem('authToken', authToken);
+        setToken(authToken);
+        setUser(response.data.user);
+        return { success: true };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Google sign-in failed';
+      return { success: false, error: errorMsg };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('authToken');
     setToken(null);
@@ -142,6 +159,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         signup,
         login,
+        loginWithGoogle,
         logout,
         refreshUser,
         isAuthenticated: !!token && !!user,

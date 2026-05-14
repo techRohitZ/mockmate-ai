@@ -70,8 +70,30 @@ export default function Navbar() {
               setIsOpen(false);
             }}
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">MM</span>
+            <div className="w-8 h-8">
+              <svg
+                viewBox="0 0 64 64"
+                className="h-full w-full"
+                fill="none"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id="mockmate-gradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#2dd4bf" />
+                    <stop offset="50%" stopColor="#22d3ee" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                </defs>
+                <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#mockmate-gradient)" />
+                <path
+                  d="M18 42V22l14 14 14-14v20"
+                  stroke="white"
+                  strokeWidth="4.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="32" cy="32" r="22" stroke="white" strokeOpacity="0.2" />
+              </svg>
             </div>
             <span className="font-bold text-lg text-white">MockMate AI</span>
           </div>
