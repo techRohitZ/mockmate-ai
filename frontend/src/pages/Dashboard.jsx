@@ -53,6 +53,7 @@ export default function Dashboard() {
   const latestSession = useMemo(() => {
     if (latestResult) {
       return {
+        sessionId: latestResult.sessionId,
         domain: latestResult.category,
         difficulty: latestResult.difficulty,
         duration: formatDuration(latestResult.duration),
@@ -67,6 +68,7 @@ export default function Dashboard() {
     }
 
     return {
+      sessionId: latestInterview.sessionId,
       domain: latestInterview.domain,
       difficulty: latestInterview.difficulty || 'Practice',
       duration: latestInterview.duration,
@@ -75,6 +77,27 @@ export default function Dashboard() {
       date: latestInterview.date,
     };
   }, [latestResult, latestInterview]);
+
+  const openFeedback = (interview) => {
+    if (!interview?.sessionId) {
+      return;
+    }
+
+    navigate('/interview/feedback', {
+      state: {
+        sessionId: interview.sessionId,
+        interviewResults: {
+          sessionId: interview.sessionId,
+          category: interview.domain || interview.category || 'Interview',
+          difficulty: interview.difficulty || 'N/A',
+          duration: interview.duration || 'N/A',
+          score: interview.score ?? 0,
+          questionsAsked: interview.questionsAsked ?? null,
+          correctAnswers: interview.correctAnswers ?? null,
+        },
+      },
+    });
+  };
 
   const totalMinutes = useMemo(() => {
     return recentInterviews.reduce((sum, interview) => sum + parseMinutes(interview.duration), 0);
@@ -249,6 +272,14 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-400">
                     Latest session recorded on {new Date(latestSession.date).toLocaleDateString()}.
                   </p>
+                  {latestSession.sessionId && (
+                    <button
+                      onClick={() => openFeedback(latestSession)}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-teal-200 hover:text-teal-100 transition"
+                    >
+                      View detailed feedback <ArrowRight size={14} />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-400">
@@ -427,6 +458,7 @@ export default function Dashboard() {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-[0.2em]">Date</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-[0.2em]">Duration</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-[0.2em]">Score</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-[0.2em]">Feedback</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -451,6 +483,18 @@ export default function Dashboard() {
                               </div>
                               <span className="font-semibold text-sm">{interview.score}%</span>
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {interview.sessionId ? (
+                              <button
+                                onClick={() => openFeedback(interview)}
+                                className="text-sm font-semibold text-teal-200 hover:text-teal-100 transition"
+                              >
+                                View
+                              </button>
+                            ) : (
+                              <span className="text-xs text-slate-500">—</span>
+                            )}
                           </td>
                         </tr>
                       ))}

@@ -237,6 +237,7 @@ export default function Interview() {
 
     const responses = interviewSessionRef.current.responses;
     let overallScore = 0;
+    let evaluationPayload = null;
 
     if (responses.length > 0) {
       try {
@@ -247,7 +248,8 @@ export default function Interview() {
           responses,
         });
 
-        const scoreValue = Number(evaluationResponse.data?.overallScore);
+        evaluationPayload = evaluationResponse.data || null;
+        const scoreValue = Number(evaluationPayload?.overallScore);
         overallScore = Number.isFinite(scoreValue) ? Math.round(scoreValue) : 0;
       } catch (error) {
         console.error('Error evaluating interview:', error);
@@ -269,6 +271,8 @@ export default function Interview() {
             difficulty,
             score: overallScore,
             duration: `${durationValue} min`,
+            evaluation: evaluationPayload,
+            responses,
           },
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -290,10 +294,12 @@ export default function Interview() {
     // Calculate score (mock calculation)
     const score = Math.min(100, overallScore || 0);
 
-    // Navigate to results
-    navigate('/dashboard', {
+    // Navigate to feedback
+    navigate('/interview/feedback', {
       state: {
+        evaluation: evaluationPayload,
         interviewResults: {
+          sessionId,
           category,
           difficulty,
           duration: durationValue,
@@ -302,6 +308,7 @@ export default function Interview() {
           correctAnswers: estimatedCorrect,
           responses,
         },
+        responses,
       },
     });
   };

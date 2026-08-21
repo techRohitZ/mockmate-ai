@@ -61,7 +61,7 @@ IMPORTANT RULES:
     frontend: `You're interviewing for Frontend Developer role. Core topics: HTML/CSS fundamentals, JavaScript (ES6+), React/Vue basics, state management, component lifecycle, performance optimization, accessibility, browser APIs, debugging. ${difficultyGuidelines[mappedDifficulty]}`,
     backend: `You're interviewing for Backend Developer role. Core topics: REST APIs, HTTP, databases (SQL/NoSQL), authentication/authorization, caching strategies, scalability, microservices, message queues, security best practices. ${difficultyGuidelines[mappedDifficulty]}`,
     dbms: `You're interviewing for Database Engineer role. Core topics: SQL queries, database design, indexing, query optimization, transactions and ACID, normalization, scaling, backup/recovery strategies. ${difficultyGuidelines[mappedDifficulty]}`,
-    "core cs": `You're interviewing for Software Engineer role. Core topics: Data structures, algorithms, complexity analysis (Big O), design patterns, operating systems, concurrency, problem-solving approach. ${difficultyGuidelines[mappedDifficulty]}`,
+    "core cs": `You're interviewing for Software Engineer role. Core topics: OOP fundamentals (encapsulation, inheritance, polymorphism, abstraction), SOLID basics, data structures, algorithms, complexity analysis (Big O), design patterns, operating systems, memory management, concurrency, networking basics, and problem-solving approach. ${difficultyGuidelines[mappedDifficulty]}`,
   };
 
   return basePrompt + "\n\n" + (domainSpecific[domain.toLowerCase()] || domainSpecific.frontend);

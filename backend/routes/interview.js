@@ -24,6 +24,80 @@ const getGroqClient = () => {
   return groqClient;
 };
 
+const buildEvaluationPrompt = ({ domain, difficulty, responses }) => {
+  const formattedTranscript = responses
+    .map((r, i) => `Q${i + 1}: ${r.question}\nCandidate Answer: ${r.answer}`)
+    .join('\n\n');
+
+  return `You are an expert technical lead evaluating a candidate's performance in a ${difficulty} level ${domain} interview. 
+    
+Review the following Q&A transcript. You MUST respond with ONLY a valid JSON object. Do not include markdown formatting like \`\`\`json. Do not include any intro or outro text.
+
+Every question MUST have a detailedFeedback entry. All fields must be non-empty strings. Provide a concise but complete "idealAnswer" for each question.
+
+The JSON object must strictly follow this structure:
+{
+  "overallScore": <a number between 0 and 100 representing their total performance>,
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "weaknesses": ["<area for improvement 1>", "<area for improvement 2>"],
+  "detailedFeedback": [
+    {
+      "question": "<copy the question asked>",
+      "userAnswer": "<summarize the user's answer>",
+      "idealAnswer": "<what a perfect, concise answer would have been>",
+      "feedback": "<brief feedback on what they missed or did well>"
+    }
+  ]
+}
+
+TRANSCRIPT TO EVALUATE:
+${formattedTranscript}`;
+};
+
+const parseEvaluationPayload = (rawText) => {
+  if (!rawText) {
+    return null;
+  }
+
+  if (typeof rawText === 'object') {
+    return rawText;
+  }
+
+  const cleaned = String(rawText).replace(/```json/g, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch (innerError) {
+        return null;
+      }
+    }
+  }
+
+  return null;
+};
+
+const generateEvaluation = async ({ domain, difficulty, responses }) => {
+  const groq = getGroqClient();
+  if (!groq) {
+    return null;
+  }
+
+  const evaluationPrompt = buildEvaluationPrompt({ domain, difficulty, responses });
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: evaluationPrompt }],
+    model: GROQ_MODEL,
+    temperature: 0.2,
+  });
+
+  const evaluationText = chatCompletion.choices[0]?.message?.content || '{}';
+  return parseEvaluationPayload(evaluationText);
+};
+
 router.get('/interview/company-banks', (req, res) => {
   try {
     const companies = getCompanyBankSummaries();
@@ -222,31 +296,7 @@ router.post('/interview/evaluate', async (req, res) => {
 
     console.log(`[Evaluation] Generating report for session: ${sessionId}`);
 
-    const formattedTranscript = responses
-      .map((r, i) => `Q${i + 1}: ${r.question}\nCandidate Answer: ${r.answer}`)
-      .join('\n\n');
-
-    const evaluationPrompt = `You are an expert technical lead evaluating a candidate's performance in a ${difficulty} level ${domain} interview. 
-    
-Review the following Q&A transcript. You MUST respond with ONLY a valid JSON object. Do not include markdown formatting like \`\`\`json. Do not include any intro or outro text.
-
-The JSON object must strictly follow this structure:
-{
-  "overallScore": <a number between 0 and 100 representing their total performance>,
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "weaknesses": ["<area for improvement 1>", "<area for improvement 2>"],
-  "detailedFeedback": [
-    {
-      "question": "<copy the question asked>",
-      "userAnswer": "<summarize the user's answer>",
-      "idealAnswer": "<what a perfect, concise answer would have been>",
-      "feedback": "<brief feedback on what they missed or did well>"
-    }
-  ]
-}
-
-TRANSCRIPT TO EVALUATE:
-${formattedTranscript}`;
+    const evaluationPrompt = buildEvaluationPrompt({ domain, difficulty, responses });
 
     const groq = getGroqClient();
     if (!groq) {
@@ -260,10 +310,12 @@ ${formattedTranscript}`;
       temperature: 0.2,
     });
 
-    let evaluationText = chatCompletion.choices[0]?.message?.content || '{}';
-    evaluationText = evaluationText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const evaluationText = chatCompletion.choices[0]?.message?.content || '{}';
+    const evaluationJSON = parseEvaluationPayload(evaluationText);
 
-    const evaluationJSON = JSON.parse(evaluationText);
+    if (!evaluationJSON) {
+      return res.status(500).json({ error: 'Failed to parse interview evaluation.' });
+    }
 
     if (sessionId) {
       if (!interviewArtifacts[sessionId]) {
@@ -291,6 +343,97 @@ ${formattedTranscript}`;
   }
 });
 
+router.post('/interview/feedback/:sessionId/regenerate', async (req, res) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required.' });
+    }
+
+    const interview = await Interview.findOne({ userId, sessionId });
+    if (!interview) {
+      return res.status(404).json({ error: 'Interview not found.' });
+    }
+
+    const responses = Array.isArray(interview.transcript) ? interview.transcript : [];
+    if (responses.length === 0) {
+      return res.status(400).json({ error: 'No transcript available to regenerate feedback.' });
+    }
+
+    const groq = getGroqClient();
+    if (!groq) {
+      console.error('❌ GROQ_API_KEY not configured');
+      return res.status(500).json({ error: 'Server configuration error. API key missing.' });
+    }
+
+    const evaluationPrompt = buildEvaluationPrompt({
+      domain: interview.domain,
+      difficulty: interview.difficulty,
+      responses,
+    });
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: evaluationPrompt }],
+      model: GROQ_MODEL,
+      temperature: 0.2,
+    });
+
+    const evaluationText = chatCompletion.choices[0]?.message?.content || '{}';
+    const evaluationJSON = parseEvaluationPayload(evaluationText);
+
+    if (!evaluationJSON) {
+      return res.status(500).json({ error: 'Failed to parse regenerated feedback.' });
+    }
+
+    interview.evaluation = evaluationJSON;
+    await interview.save();
+
+    res.json({ evaluation: evaluationJSON });
+  } catch (error) {
+    console.error('❌ Regenerate feedback error:', error);
+    res.status(500).json({ error: 'Failed to regenerate interview feedback.' });
+  }
+});
+
+router.get('/interview/feedback/:sessionId', async (req, res) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required.' });
+    }
+
+    const interview = await Interview.findOne({ userId, sessionId });
+    if (!interview) {
+      return res.status(404).json({ error: 'Interview feedback not found.' });
+    }
+
+    res.json({
+      sessionId: interview.sessionId,
+      domain: interview.domain,
+      difficulty: interview.difficulty,
+      duration: interview.duration,
+      score: interview.finalScore,
+      createdAt: interview.createdAt,
+      transcript: interview.transcript || [],
+      evaluation: interview.evaluation || null,
+      metrics: interview.metrics || null,
+    });
+  } catch (error) {
+    console.error('❌ Feedback fetch error:', error);
+    res.status(500).json({ error: 'Failed to load interview feedback.' });
+  }
+});
+
 router.post('/interview/complete', async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req);
@@ -298,7 +441,7 @@ router.post('/interview/complete', async (req, res) => {
       return res.status(401).json({ error: 'Not authorized' });
     }
 
-    const { domain, difficulty, score, duration, sessionId, responses } = req.body;
+    const { domain, difficulty, score, duration, sessionId, responses, evaluation } = req.body;
     const normalizedScore = Number(score);
 
     if (!domain || !difficulty || !duration || Number.isNaN(normalizedScore)) {
@@ -319,6 +462,25 @@ router.post('/interview/complete', async (req, res) => {
 
     const metrics = buildInterviewMetrics(transcript);
 
+    let evaluationPayload =
+      parseEvaluationPayload(evaluation) ||
+      parseEvaluationPayload(artifact?.evaluation) ||
+      evaluation ||
+      artifact?.evaluation ||
+      null;
+
+    if (!evaluationPayload && transcript.length > 0) {
+      try {
+        evaluationPayload = await generateEvaluation({
+          domain,
+          difficulty,
+          responses: transcript,
+        });
+      } catch (error) {
+        console.error('❌ Fallback evaluation error:', error.message);
+      }
+    }
+
     const interviewPayload = {
       userId,
       sessionId: sessionId || `session_${Date.now()}`,
@@ -327,7 +489,7 @@ router.post('/interview/complete', async (req, res) => {
       duration,
       finalScore: normalizedScore,
       transcript,
-      evaluation: artifact?.evaluation || null,
+      evaluation: evaluationPayload,
       metrics,
     };
 

@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Interview from './pages/Interview';
+import InterviewFeedback from './pages/InterviewFeedback';
 import CodePractice from './pages/CodePractice';
 import CompanyCollections from './pages/CompanyCollections';
 import StudyTracks from './pages/StudyTracks';
@@ -35,6 +36,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Interview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/interview/feedback"
+            element={
+              <ProtectedRoute>
+                <InterviewFeedback />
               </ProtectedRoute>
             }
           />
