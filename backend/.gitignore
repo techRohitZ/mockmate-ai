@@ -2,6 +2,7 @@ node_modules
 dist
 dist-ssr
 env
+.env
 MockMateAI_Project_Report.md
 MockMateAI_Project_Report.pdf
 .env.*.local

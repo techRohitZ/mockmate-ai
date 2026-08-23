@@ -3,9 +3,6 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-// Reads from Netlify environment variable in production, falls back to localhost locally
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('authToken'));
@@ -27,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async (authToken, userId) => {
     const response = await axios.get(
-      `${API_BASE_URL}/api/auth/profile/${userId}`,
+      `http://localhost:5000/api/auth/profile/${userId}`,
       {
         headers: { Authorization: `Bearer ${authToken}` },
       }
@@ -61,7 +58,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
       }
       const response = await axios.get(
-        `${API_BASE_URL}/api/auth/me`,
+        `http://localhost:5000/api/auth/me`,
         {
           headers: { Authorization: `Bearer ${authToken}` },
         }
@@ -94,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   const signup = async (name, email, password, confirmPassword) => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/api/auth/signup`,
+        'http://localhost:5000/api/auth/signup',
         { name, email, password, confirmPassword }
       );
 
@@ -114,7 +111,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/api/auth/login`,
+        'http://localhost:5000/api/auth/login',
         { email, password }
       );
 
@@ -133,7 +130,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (idToken) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/google`, { idToken });
+      const response = await axios.post('http://localhost:5000/api/auth/google', { idToken });
 
       if (response.data.success) {
         const authToken = response.data.token;
