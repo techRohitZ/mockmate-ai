@@ -2,6 +2,11 @@
   publish = "dist"
   command = "npm run build"
 
+# Vite inlines VITE_* values at build time. Also set VITE_API_URL in the
+# Netlify UI to your hosted backend (this file cannot guess that URL).
+[build.environment]
+  VITE_GOOGLE_CLIENT_ID = "365244192133-a3u6g5qc925f84jt9orvpdhgpc9nr0kt.apps.googleusercontent.com"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

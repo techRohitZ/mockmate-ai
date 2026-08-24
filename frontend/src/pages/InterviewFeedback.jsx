@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 export default function InterviewFeedback() {
@@ -55,8 +55,8 @@ export default function InterviewFeedback() {
     setLoadError('');
 
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/interview/feedback/${targetSessionId}`,
+      const response = await api.get(
+        `/api/interview/feedback/${targetSessionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -100,8 +100,8 @@ export default function InterviewFeedback() {
     setIsRegenerating(true);
     setRegenerateError('');
     try {
-      const response = await axios.post(
-        `http://localhost:5000/api/interview/feedback/${sessionId}/regenerate`,
+      const response = await api.post(
+        `/api/interview/feedback/${sessionId}/regenerate`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -134,7 +134,7 @@ export default function InterviewFeedback() {
       setIsRecentLoading(true);
       setRecentError('');
       try {
-        const response = await axios.get('http://localhost:5000/api/dashboard/analytics', {
+        const response = await api.get('/api/dashboard/analytics', {
           headers: { Authorization: `Bearer ${token}` },
         });
 

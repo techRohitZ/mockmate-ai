@@ -1,17 +1,12 @@
+import './loadEnv.js';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 import authRoutes from './routes/auth.js';
 import contactRoutes from './routes/contact.js';
 import interviewRoutes from './routes/interview.js';
 import practiceRoutes from './routes/practice.js';
 import dashboardRoutes from './routes/dashboard.js';
-
-const currentDir = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(currentDir, '.env') });
 
 const STARTUP_TIME = new Date().toISOString();
 console.log(`[${STARTUP_TIME}] Server starting...`);
@@ -46,6 +41,6 @@ app.get('/api/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

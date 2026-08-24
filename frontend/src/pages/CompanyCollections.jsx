@@ -4,7 +4,7 @@ import { ArrowRight, Building2, CheckCircle2, ClipboardList } from 'lucide-react
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import axios from 'axios';
+import api from '../api/client';
 
 const BASE_COLLECTIONS = [
   {
@@ -106,7 +106,7 @@ export default function CompanyCollections() {
 
     const loadBanks = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/interview/company-banks');
+        const response = await api.get('/api/interview/company-banks');
         const companies = response.data?.companies;
         if (isMounted && Array.isArray(companies) && companies.length > 0) {
           setCollections(companies);
@@ -135,8 +135,8 @@ export default function CompanyCollections() {
     const loadQuestions = async () => {
       setIsLoadingPreview(true);
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/interview/company-bank/${selectedCollection.id}`
+        const response = await api.get(
+          `/api/interview/company-bank/${selectedCollection.id}`
         );
         const questions = response.data?.questions || [];
         if (isMounted) {

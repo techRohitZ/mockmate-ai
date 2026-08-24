@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/client';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -31,7 +31,7 @@ export default function Contact() {
 
     try {
       // Send to backend
-      await axios.post('http://localhost:5000/api/contact', formData);
+      await api.post('/api/contact', formData);
       setSuccess(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
 

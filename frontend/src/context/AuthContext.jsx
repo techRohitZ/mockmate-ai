@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/client';
 
 const AuthContext = createContext();
 
@@ -23,8 +23,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchUserProfile = async (authToken, userId) => {
-    const response = await axios.get(
-      `http://localhost:5000/api/auth/profile/${userId}`,
+    const response = await api.get(
+      `/api/auth/profile/${userId}`,
       {
         headers: { Authorization: `Bearer ${authToken}` },
       }
@@ -57,8 +57,8 @@ export const AuthProvider = ({ children }) => {
       if (!silent) {
         setLoading(true);
       }
-      const response = await axios.get(
-        `http://localhost:5000/api/auth/me`,
+      const response = await api.get(
+        `/api/auth/me`,
         {
           headers: { Authorization: `Bearer ${authToken}` },
         }
@@ -90,8 +90,8 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (name, email, password, confirmPassword) => {
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/signup',
+      const response = await api.post(
+        '/api/auth/signup',
         { name, email, password, confirmPassword }
       );
 
@@ -110,8 +110,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
+      const response = await api.post(
+        '/api/auth/login',
         { email, password }
       );
 
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (idToken) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/google', { idToken });
+      const response = await api.post('/api/auth/google', { idToken });
 
       if (response.data.success) {
         const authToken = response.data.token;

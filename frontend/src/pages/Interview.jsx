@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Camera, CameraOff, Mic, MicOff, PhoneOff, Send, Users, Volume2, VolumeX } from 'lucide-react';
 import ConfigModal from './ConfigModal';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../api/client';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -142,7 +142,7 @@ export default function Interview() {
     setIsLoading(true);
     setAiSpeaking(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/interview', {
+      const response = await api.post('/api/interview', {
         userMessage: fullText,
         sessionId: sessionId,
         domain: category,
@@ -241,7 +241,7 @@ export default function Interview() {
 
     if (responses.length > 0) {
       try {
-        const evaluationResponse = await axios.post('http://localhost:5000/api/interview/evaluate', {
+        const evaluationResponse = await api.post('/api/interview/evaluate', {
           sessionId,
           domain: category,
           difficulty,
@@ -263,8 +263,8 @@ export default function Interview() {
 
     if (token) {
       try {
-        await axios.post(
-          'http://localhost:5000/api/interview/complete',
+        await api.post(
+          '/api/interview/complete',
           {
             sessionId,
             domain: category,
@@ -286,7 +286,7 @@ export default function Interview() {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/interview/end', { sessionId });
+      await api.post('/api/interview/end', { sessionId });
     } catch (error) {
       console.error('Error ending interview session:', error);
     }

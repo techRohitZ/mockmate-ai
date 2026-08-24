@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
-import axios from 'axios';
+import api from '../api/client';
 
 const LANGUAGE_OPTIONS = [
   { label: 'JavaScript', value: 'javascript' },
@@ -97,7 +97,7 @@ export default function CodePractice() {
     setError('');
     try {
       // Load all problems without filtering by current state
-      const response = await axios.get(`http://localhost:5000/api/practice/problems`);
+      const response = await api.get(`/api/practice/problems`);
       setCuratedProblems(response.data?.problems || []);
       setProblemStats(response.data?.stats);
     } catch (err) {
@@ -115,7 +115,7 @@ export default function CodePractice() {
     setSubmission(null);
     setCode(''); // Clear code editor - user writes from scratch
     try {
-      const response = await axios.get(`http://localhost:5000/api/practice/problem/${curatedProblemId}`);
+      const response = await api.get(`/api/practice/problem/${curatedProblemId}`);
       const nextProblem = response.data?.problem;
 
       if (nextProblem) {
@@ -144,7 +144,7 @@ export default function CodePractice() {
     setSubmission(null);
     setCode(''); // Clear code editor when loading new problem
     try {
-      const response = await axios.post('http://localhost:5000/api/practice/problem', {
+      const response = await api.post('/api/practice/problem', {
         sessionId,
         topic,
         difficulty,
@@ -192,7 +192,7 @@ export default function CodePractice() {
     setIsSubmitting(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/api/practice/submit', {
+      const response = await api.post('/api/practice/submit', {
         sessionId,
         problemId,
         problem,
