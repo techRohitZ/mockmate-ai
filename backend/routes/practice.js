@@ -5,7 +5,7 @@ import { practiceSessions } from '../store/sessionStore.js';
 import { buildEnhancedReviewPrompt, buildPracticePrompt } from '../prompts/practicePrompts.js';
 
 const router = express.Router();
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 let groqClient = null;
 
 const getGroqClient = () => {
